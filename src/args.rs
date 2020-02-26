@@ -5,6 +5,7 @@ use std::ffi::OsString;
 
 pub enum Argument {
     Directory,
+    AbsolutePath,
 }
 
 static DESCRIPTION: &str = "\
@@ -35,6 +36,12 @@ where
                 .help(Directory.description())
                 .required(true),
         )
+        .arg(
+            Arg::with_name(AbsolutePath.as_str())
+                .help(AbsolutePath.description())
+                .long(AbsolutePath.as_str())
+                .short(AbsolutePath.as_str().to_uppercase()),
+        )
         .get_matches_from(itr)
 }
 
@@ -43,6 +50,7 @@ impl Argument {
         use Argument::*;
         match *self {
             Directory => "directory",
+            AbsolutePath => "absolute",
         }
     }
 
@@ -50,6 +58,7 @@ impl Argument {
         use Argument::*;
         match *self {
             Directory => "directory to parse sub dirs from",
+            AbsolutePath => "show absolute paths",
         }
     }
 }
