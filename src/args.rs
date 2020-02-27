@@ -1,11 +1,12 @@
 use crate::build_info;
 
-use clap::{App, Arg, ArgMatches};
+use clap::{App, Arg, ArgGroup, ArgMatches};
 use std::ffi::OsString;
 
 pub enum Argument {
     Directory,
     AbsolutePath,
+    ShowBranch,
 }
 
 static DESCRIPTION: &str = "\
@@ -42,6 +43,13 @@ where
                 .long(AbsolutePath.as_str())
                 .short(AbsolutePath.as_str().to_uppercase()),
         )
+        .arg(
+            Arg::with_name(ShowBranch.as_str())
+                .help(ShowBranch.description())
+                .long(ShowBranch.as_str())
+                .short(ShowBranch.as_str()),
+        )
+        .group(ArgGroup::with_name("action").args(&[ShowBranch.as_str()]))
         .get_matches_from(itr)
 }
 
@@ -51,6 +59,7 @@ impl Argument {
         match *self {
             Directory => "directory",
             AbsolutePath => "absolute",
+            ShowBranch => "branch",
         }
     }
 
@@ -59,6 +68,7 @@ impl Argument {
         match *self {
             Directory => "directory to parse sub dirs from",
             AbsolutePath => "show absolute paths",
+            ShowBranch => "show branch",
         }
     }
 }
