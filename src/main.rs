@@ -2,11 +2,11 @@
 
 mod args;
 mod build_info;
+mod repository;
 
 use clap::ArgMatches;
 use colored::*;
-use git2::Repository;
-// use rayon::prelude::*;
+use repository::Repository;
 use std::env;
 use std::fs;
 use std::io;
@@ -29,15 +29,10 @@ fn run(args: ArgMatches<'static>) -> io::Result<()> {
     let base_path = absolute_path.to_str().unwrap();
     let base_path_len = base_path.len();
     let show = args.is_present(AbsolutePath);
-    let repositories = find_git_repositories(base_path)?;
-
-    let repositories: Vec<_> = repositories
-        .iter()
-        .map(|r| (r.display_path(show, base_path_len), r))
-        .collect();
+    let repositories = find_git_repositories(base_path, show, base_path_len)?;
     let max_padding = repositories
         .iter()
-        .map(|r| r.0.len())
+        .map(|r| r.name().len())
         .fold(None, |max, cur| match max {
             None => Some(cur),
             Some(x) => Some(if cur > x { cur } else { x }),
@@ -48,13 +43,9 @@ fn run(args: ArgMatches<'static>) -> io::Result<()> {
         for repository in repositories {
             println!(
                 "{repository:<width$} : {status}",
-                repository = repository.0,
+                repository = repository.name(),
                 width = max_padding,
-                status = repository
-                    .1
-                    .current_branch()
-                    .unwrap_or("HEAD".to_owned())
-                    .green(),
+                status = repository_branch(&repository),
             );
         }
     } else {
@@ -62,7 +53,7 @@ fn run(args: ArgMatches<'static>) -> io::Result<()> {
             "{}",
             repositories
                 .iter()
-                .map(|r| r.0.to_owned())
+                .map(|r| r.name())
                 .collect::<Vec<_>>()
                 .join("\n")
         )
@@ -71,49 +62,33 @@ fn run(args: ArgMatches<'static>) -> io::Result<()> {
     Ok(())
 }
 
-fn find_git_repositories<P: AsRef<Path>>(path: P) -> io::Result<Vec<Repository>> {
+fn repository_branch(repository: &Repository) -> ColoredString {
+    match repository.branch() {
+        Ok(branch) => branch.green(),
+        Err(ref e) if e.code() == git2::ErrorCode::UnbornBranch => {
+            "not on a branch".to_owned().dimmed()
+        }
+        Err(_) => "unknown".to_owned().dimmed(),
+    }
+}
+
+fn find_git_repositories<P>(
+    path: P,
+    show_absolute_path: bool,
+    path_len: usize,
+) -> io::Result<Vec<Repository>>
+where
+    P: AsRef<Path>,
+{
     Ok(
         globwalk::GlobWalkerBuilder::from_patterns(path, &["**/.git/"])
             .build()?
             .filter_map(Result::ok)
-            .filter_map(|dir| Repository::open(dir.into_path()).ok())
+            .filter_map(|dir| git2::Repository::open(dir.into_path()).ok())
+            .map(|r| {
+                let display_name = repository::workdir_path(&r, show_absolute_path, path_len);
+                Repository::new(r, display_name.unwrap_or("".to_owned()))
+            })
             .collect(),
     )
-}
-
-trait RepositoryExt {
-    fn display_path(&self, show: bool, base_path_len: usize) -> String;
-    fn current_branch(&self) -> Option<String>;
-}
-
-impl RepositoryExt for Repository {
-    fn display_path(&self, show: bool, base_path_len: usize) -> String {
-        self.workdir()
-            .and_then(|p| p.to_str())
-            .map(|p| {
-                if show {
-                    p.to_owned()
-                } else {
-                    p.chars().skip(base_path_len + 1).collect()
-                }
-            })
-            .map(|p| p.trim_end_matches('/').to_owned())
-            .unwrap_or("".to_owned())
-    }
-
-    fn current_branch(&self) -> Option<String> {
-        use git2::ErrorCode;
-        let head = match self.head() {
-            Ok(head) => Some(head),
-            Err(ref e)
-                if e.code() == ErrorCode::UnbornBranch || e.code() == ErrorCode::NotFound =>
-            {
-                None
-            }
-            Err(_) => None,
-        };
-        head.as_ref()
-            .and_then(|h| h.shorthand())
-            .map(|h| h.to_owned())
-    }
 }
