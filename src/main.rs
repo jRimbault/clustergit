@@ -43,6 +43,12 @@ fn run(args: ArgMatches<'static>) -> io::Result<()> {
         print_repositories(&repositories, max_padding, repository_branch);
     } else if args.is_present(GitStatus) {
         print_repositories(&repositories, max_padding, repository_status);
+    } else if args.is_present(GitFetch) {
+        print_repositories(&repositories, max_padding, repository_fetch);
+    } else if args.is_present(GitPull) {
+        print_repositories(&repositories, max_padding, repository_pull);
+    } else if args.is_present(GitPush) {
+        print_repositories(&repositories, max_padding, repository_push);
     } else {
         println!(
             "{}",
@@ -63,10 +69,10 @@ where
 {
     for repository in repositories {
         println!(
-            "{repository:<width$} : {status}",
+            "{repository:<width$} : {info}",
             repository = repository.name(),
             width = max_padding,
-            status = info_getter(&repository),
+            info = info_getter(&repository),
         );
     }
 }
@@ -82,5 +88,17 @@ fn repository_branch(repository: &Repository) -> ColoredString {
 }
 
 fn repository_status(_repository: &Repository) -> ColoredString {
+    "not implemented yet".to_owned().red()
+}
+
+fn repository_fetch(_repository: &Repository) -> ColoredString {
+    "not implemented yet".to_owned().red()
+}
+
+fn repository_pull(_repository: &Repository) -> ColoredString {
+    "not implemented yet".to_owned().red()
+}
+
+fn repository_push(_repository: &Repository) -> ColoredString {
     "not implemented yet".to_owned().red()
 }

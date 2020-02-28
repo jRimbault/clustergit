@@ -8,6 +8,9 @@ pub enum Argument {
     AbsolutePath,
     ShowBranch,
     GitStatus,
+    GitFetch,
+    GitPull,
+    GitPush,
 }
 
 static DESCRIPTION: &str = "\
@@ -56,7 +59,31 @@ where
                 .long(GitStatus.as_str())
                 .short(GitStatus.as_str()),
         )
-        .group(ArgGroup::with_name("action").args(&[ShowBranch.as_str(), GitStatus.as_str()]))
+        .arg(
+            Arg::with_name(GitFetch.as_str())
+                .help(GitFetch.description())
+                .long(GitFetch.as_str())
+                .short(GitFetch.as_str()),
+        )
+        .arg(
+            Arg::with_name(GitPull.as_str())
+                .help(GitPull.description())
+                .long(GitPull.as_str())
+                .short(GitPull.as_str()),
+        )
+        .arg(
+            Arg::with_name(GitPush.as_str())
+                .help(GitPush.description())
+                .long(GitPush.as_str())
+                .short(GitPush.as_str().to_uppercase()),
+        )
+        .group(ArgGroup::with_name("action").args(&[
+            ShowBranch.as_str(),
+            GitStatus.as_str(),
+            GitFetch.as_str(),
+            GitPull.as_str(),
+            GitPush.as_str(),
+        ]))
         .get_matches_from(itr)
 }
 
@@ -68,6 +95,9 @@ impl Argument {
             AbsolutePath => "absolute",
             ShowBranch => "branch",
             GitStatus => "status",
+            GitFetch => "fetch",
+            GitPull => "pull",
+            GitPush => "push",
         }
     }
 
@@ -78,6 +108,9 @@ impl Argument {
             AbsolutePath => "show absolute paths",
             ShowBranch => "show branch",
             GitStatus => "show status",
+            GitFetch => "fetch from remote",
+            GitPull => "pull from remote",
+            GitPush => "pull to remote",
         }
     }
 }
