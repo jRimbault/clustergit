@@ -1,0 +1,20 @@
+name: Rust
+
+on: [push]
+
+jobs:
+  build:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Lint
+      run: cargo fmt -- --check
+    - name: Build
+      run: cargo build
+    - name: Run tests
+      run: cargo test

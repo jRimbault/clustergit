@@ -4,15 +4,15 @@ pub struct Repository {
 }
 
 impl Repository {
-    pub fn new(repository: git2::Repository, display_name: String) -> Self {
+    pub fn new(repository: git2::Repository, display_name: &str) -> Self {
         Repository {
-            display_name,
+            display_name: display_name.to_owned(),
             repository,
         }
     }
 
-    pub fn name(&self) -> String {
-        self.display_name.clone()
+    pub fn name(&self) -> &str {
+        &self.display_name
     }
 
     pub fn branch(&self) -> Result<String, git2::Error> {

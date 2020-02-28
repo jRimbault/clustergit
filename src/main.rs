@@ -2,6 +2,7 @@
 
 mod args;
 mod build_info;
+mod fshelper;
 mod repository;
 
 use clap::ArgMatches;
@@ -10,7 +11,6 @@ use repository::Repository;
 use std::env;
 use std::fs;
 use std::io;
-use std::path::Path;
 use std::process;
 
 fn main() {
@@ -29,7 +29,7 @@ fn run(args: ArgMatches<'static>) -> io::Result<()> {
     let base_path = absolute_path.to_str().unwrap();
     let base_path_len = base_path.len();
     let show = args.is_present(AbsolutePath);
-    let repositories = find_git_repositories(base_path, show, base_path_len)?;
+    let repositories = fshelper::find_git_repositories(base_path, show, base_path_len)?;
     let max_padding = repositories
         .iter()
         .map(|r| r.name().len())
@@ -83,25 +83,4 @@ fn repository_branch(repository: &Repository) -> ColoredString {
 
 fn repository_status(_repository: &Repository) -> ColoredString {
     "not implemented yet".to_owned().red()
-}
-
-fn find_git_repositories<P>(
-    path: P,
-    show_absolute_path: bool,
-    path_len: usize,
-) -> io::Result<Vec<Repository>>
-where
-    P: AsRef<Path>,
-{
-    Ok(
-        globwalk::GlobWalkerBuilder::from_patterns(path, &["**/.git/"])
-            .build()?
-            .filter_map(Result::ok)
-            .filter_map(|dir| git2::Repository::open(dir.into_path()).ok())
-            .map(|r| {
-                let display_name = repository::workdir_path(&r, show_absolute_path, path_len);
-                Repository::new(r, display_name.unwrap_or("".to_owned()))
-            })
-            .collect(),
-    )
 }
