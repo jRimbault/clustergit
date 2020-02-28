@@ -48,6 +48,15 @@ fn run(args: ArgMatches<'static>) -> io::Result<()> {
                 status = repository_branch(&repository),
             );
         }
+    } else if args.is_present(GitStatus) {
+        for repository in repositories {
+            println!(
+                "{repository:<width$} : {status}",
+                repository = repository.name(),
+                width = max_padding,
+                status = repository_status(&repository),
+            );
+        }
     } else {
         println!(
             "{}",
@@ -70,6 +79,10 @@ fn repository_branch(repository: &Repository) -> ColoredString {
         }
         Err(_) => "unknown".to_owned().dimmed(),
     }
+}
+
+fn repository_status(_repository: &Repository) -> ColoredString {
+    "not implemented yet".to_owned().red()
 }
 
 fn find_git_repositories<P>(

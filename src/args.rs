@@ -7,6 +7,7 @@ pub enum Argument {
     Directory,
     AbsolutePath,
     ShowBranch,
+    GitStatus,
 }
 
 static DESCRIPTION: &str = "\
@@ -49,7 +50,13 @@ where
                 .long(ShowBranch.as_str())
                 .short(ShowBranch.as_str()),
         )
-        .group(ArgGroup::with_name("action").args(&[ShowBranch.as_str()]))
+        .arg(
+            Arg::with_name(GitStatus.as_str())
+                .help(GitStatus.description())
+                .long(GitStatus.as_str())
+                .short(GitStatus.as_str()),
+        )
+        .group(ArgGroup::with_name("action").args(&[ShowBranch.as_str(), GitStatus.as_str()]))
         .get_matches_from(itr)
 }
 
@@ -60,6 +67,7 @@ impl Argument {
             Directory => "directory",
             AbsolutePath => "absolute",
             ShowBranch => "branch",
+            GitStatus => "status",
         }
     }
 
@@ -69,6 +77,7 @@ impl Argument {
             Directory => "directory to parse sub dirs from",
             AbsolutePath => "show absolute paths",
             ShowBranch => "show branch",
+            GitStatus => "show status",
         }
     }
 }
