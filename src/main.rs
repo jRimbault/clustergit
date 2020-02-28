@@ -40,23 +40,9 @@ fn run(args: ArgMatches<'static>) -> io::Result<()> {
         .unwrap_or(0);
 
     if args.is_present(ShowBranch) {
-        for repository in repositories {
-            println!(
-                "{repository:<width$} : {status}",
-                repository = repository.name(),
-                width = max_padding,
-                status = repository_branch(&repository),
-            );
-        }
+        print_repositories(&repositories, max_padding, repository_branch);
     } else if args.is_present(GitStatus) {
-        for repository in repositories {
-            println!(
-                "{repository:<width$} : {status}",
-                repository = repository.name(),
-                width = max_padding,
-                status = repository_status(&repository),
-            );
-        }
+        print_repositories(&repositories, max_padding, repository_status);
     } else {
         println!(
             "{}",
@@ -69,6 +55,20 @@ fn run(args: ArgMatches<'static>) -> io::Result<()> {
     }
 
     Ok(())
+}
+
+fn print_repositories<F>(repositories: &[Repository], max_padding: usize, info_getter: F)
+where
+    F: Fn(&Repository) -> ColoredString,
+{
+    for repository in repositories {
+        println!(
+            "{repository:<width$} : {status}",
+            repository = repository.name(),
+            width = max_padding,
+            status = info_getter(&repository),
+        );
+    }
 }
 
 fn repository_branch(repository: &Repository) -> ColoredString {
