@@ -5,6 +5,7 @@ mod build_info;
 mod fshelper;
 mod repository;
 
+use args::Argument;
 use clap::ArgMatches;
 use colored::*;
 use repository::Repository;
@@ -24,33 +25,28 @@ fn main() {
 }
 
 fn run(args: ArgMatches<'static>) -> io::Result<()> {
-    use args::Argument::*;
     let base_path = fs::canonicalize(
-        args.value_of(Directory)
+        args.value_of(Argument::Directory)
             .expect("Arg should have been defined by clap"),
-    )?;
+    )
+    .expect("Directory should be a valid path");
     let base_path = base_path.to_str().unwrap();
-    let repositories = fshelper::find_git_repositories(base_path)?;
-    let repositories = repositories
-        .iter()
-        .filter_map(|p| p.to_str())
-        .collect::<Vec<&str>>();
+    let repositories = fshelper::find_git_repositories(&base_path)?;
+    // make strings immutable
+    let repositories: Vec<&str> = repositories.iter().map(|s| s.as_ref()).collect();
 
     let mapper = RepositoriesMapper::new(
-        args.is_present(AbsolutePath),
+        args.is_present(Argument::AbsolutePath),
         base_path.len(),
         repositories
             .iter()
+            .max_by_key(|r| r.len())
             .map(|r| r.len())
-            .fold(
-                None,
-                find(|prev, curr| if prev < curr { curr } else { prev }),
-            )
             .unwrap_or(0),
     );
 
-    let result = execute_task(args, mapper, &repositories).join("\n");
-    println!("{}", result);
+    let results_shown = execute_task(args, mapper, &repositories).join("\n");
+    println!("{}", results_shown);
     Ok(())
 }
 
@@ -59,23 +55,22 @@ fn execute_task(
     mapper: RepositoriesMapper,
     repositories: &[&str],
 ) -> Vec<String> {
-    use args::Argument::*;
-    if args.is_present(ShowBranch) {
+    if args.is_present(Argument::ShowBranch) {
         mapper.map(&repositories, repository_branch)
-    } else if args.is_present(GitStatus) {
+    } else if args.is_present(Argument::GitStatus) {
         mapper.map(&repositories, repository_status)
-    } else if args.is_present(GitFetch) {
+    } else if args.is_present(Argument::GitFetch) {
         mapper.map(&repositories, repository_fetch)
-    } else if args.is_present(GitPull) {
+    } else if args.is_present(Argument::GitPull) {
         mapper.map(&repositories, repository_pull)
-    } else if args.is_present(GitPush) {
+    } else if args.is_present(Argument::GitPush) {
         mapper.map(&repositories, repository_push)
     } else {
         repositories
             .iter()
             .map(|p| p.to_owned())
             .map(repository::cut_path(
-                args.is_present(AbsolutePath),
+                args.is_present(Argument::AbsolutePath),
                 mapper.base_path_len,
             ))
             .collect()
@@ -142,14 +137,4 @@ fn repository_pull(_repository: &Repository) -> ColoredString {
 
 fn repository_push(_repository: &Repository) -> ColoredString {
     "not implemented yet".to_owned().red()
-}
-
-fn find<T, S>(selector: S) -> impl Fn(Option<T>, T) -> Option<T>
-where
-    S: Fn(T, T) -> T,
-{
-    move |prev, curr| match prev {
-        None => Some(curr),
-        Some(previous_item) => Some(selector(previous_item, curr)),
-    }
 }
