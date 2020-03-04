@@ -3,6 +3,7 @@
 mod args;
 mod build_info;
 mod fshelper;
+mod parser;
 mod repository;
 
 use args::Argument;
@@ -12,7 +13,7 @@ use repository::Repository;
 use std::env;
 use std::fs;
 use std::io;
-use std::process;
+use std::process::{self, Command};
 
 fn main() {
     process::exit(match run(args::parse(env::args())) {
@@ -123,8 +124,14 @@ fn repository_branch(repository: &Repository) -> ColoredString {
     }
 }
 
-fn repository_status(_repository: &Repository) -> ColoredString {
-    "not implemented yet".to_owned().red()
+fn repository_status(repository: &Repository) -> ColoredString {
+    repository
+        .workdir()
+        .map(|dir| Command::new("git").current_dir(dir).arg("status").output())
+        .and_then(|output| output.ok())
+        .and_then(|output| String::from_utf8(output.stdout).ok())
+        .map(|text| parser::status(repository, text))
+        .unwrap_or("".dimmed())
 }
 
 fn repository_fetch(_repository: &Repository) -> ColoredString {

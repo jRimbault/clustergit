@@ -20,6 +20,10 @@ impl Repository {
         }
     }
 
+    pub fn workdir(&self) -> Option<&Path> {
+        self.repository.workdir()
+    }
+
     pub fn name(&self, show_absolute_path: bool, base_path_len: usize) -> String {
         workdir_path(&self.repository, show_absolute_path, base_path_len).unwrap_or("".to_owned())
     }
@@ -63,7 +67,7 @@ pub fn cut_path(show_absolute_path: bool, base_path_len: usize) -> impl Fn(&str)
         } else {
             path.chars().skip(base_path_len + 1).collect()
         }
-        .trim_end_matches('/')
+        .trim_end_matches(std::path::MAIN_SEPARATOR)
         .to_owned()
     }
 }
